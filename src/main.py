@@ -1,7 +1,8 @@
-from services import simple_search
-from utils import load_excel
-from views import generate_main_page
 import json
+
+from src.services import simple_search
+from src.utils import load_excel
+from src.views import generate_main_page
 
 
 def main() -> None:
