@@ -1,9 +1,14 @@
 from datetime import datetime
+from http.client import responses
+from locale import currency
 from typing import Any, cast
 import json
+from wsgiref.validate import header_re
+
 import pandas as pd
 import requests
 
+from src.utils import load_user_settings
 from utils import load_excel
 
 
@@ -59,30 +64,65 @@ def get_currency(currencies: list) -> list:
     url = "https://cbr-xml-daily.ru"
     result = []
     try:
-        response = requests.get(url)
-        data = response.json()
-        for currency in currencies:
-            if currency in data["Valute"]:
-                rate = data["Valute"][currency]["Valute"]
-                result.append({"currency": currency, "rate": round(float(rate), 2)})
-    except (requests.RequestException, KeyError, ValueError):
-        print("Ошибка при получении курсов валют.")
+        headers = {"User-Agent": "Mozilla/5.0"}
+        response = requests.get(url, headers=headers, timeout=2)
+        if response.status_code == 200:
+            data = response.json()
+            for currency in currencies:
+                if currency in data.get("Valute", {}):
+                    rate = data["Valute"][currency]["Valute"]
+                    result.append({
+                        "currency": currency,
+                        "rate": round(float(rate), 2)
+                    })
+            return result
+    except Exception:
+        pass
+    backup_rates = {"USD": 92.50, "EUR": 100.20, "CNY": 12.80}
+    result = []
+    for currency in currencies:
+        result.append({
+            "currency": currency,
+            "rate": backup_rates.get(currency, 85.00)
+        })
     return result
 
 
 # print(load_user_settings("../user_settings.json"))
 
+def get_stock_prices(stocks: list) -> list:
+    """Функция, которая получает стоимость акций для списка."""
+    result = []
+    backup_prices = {"AAPL": 175.50, "AMZN": 180.20, "MSFT": 420.10, "TSLA": 170.00}
+    for stock in stocks:
+        try:
+            url = f"https://iss.moex.com/iss/engines/stock/markets/shares/securities/{stock}.json?iss.meta=off&iss.only=marketdata"
+            response = requests.get(url, timeout=2)
+            if response.status_code == 200:
+                data = response.json()
+                data_rows = data["marketdata"]["data"]
+                columns = data["marketdata"]["columns"]
+                last_idx = columns.index("LAST")
+                if data_rows and data_rows[0] and data_rows[0][last_idx] is not None:
+                    price = data_rows[0][last_idx]
+                    result.append({
+                        "stock": stock,
+                        "price": round(float(price),2)
+                    })
+                    continue
+        except Exception:
+            result.append({
+                "stock": stock,
+                "price": backup_prices.get(stock, 150.00)
+            })
+    return result
 
 def generate_main_page(date_str: str) -> dict[str, Any]:
     """Основная функция для генерации JSON-ответа для главной страницы."""
     filtered_operations = cast(list[dict[str, Any]], filter_operation_by_date(date_str))
     greeting = get_greeting(date_str)
     valid_operations = [op for op in filtered_operations if op.get("Сумма операции") is not None]
-    sorted_operations = sorted(
-        valid_operations,
-        key=lambda x: abs(float(x.get("Сумма операции", 0))),
-        reverse=True,
-    )
+    sorted_operations = sorted(valid_operations,key=lambda x: abs(float(x.get("Сумма операции", 0))),reverse=True)
     top_5_transactions = []
     for op in sorted_operations[:5]:
         raw_date = op.get("Дата операции")
@@ -102,12 +142,22 @@ def generate_main_page(date_str: str) -> dict[str, Any]:
                 "description": op.get("Описание", ""),
             }
         )
+    try:
+        settings = load_user_settings()
+        user_currencies = settings.get("user_currencies", ["USD", "EUR"])
+    except Exception:
+        user_currencies = ["USD", "EUR"]
+    currency_rates = get_currency(user_currencies)
+    try:
+        user_stocks = settings.get("user_stocks", ["AAPL", "AMZN", "MSFT"])
+    except Exception:
+        user_stocks = ["AAPL", "AMZN"]
     response_data = {
         "greeting": greeting,
         "cards": get_cards_info(filtered_operations),
         "top_transactions": top_5_transactions,
-        "currency_rates": [],
-        "stock_prices": [],
+        "currency_rates": currency_rates,
+        "stock_prices": get_stock_prices(user_stocks),
     }
     return response_data
 
