@@ -1,5 +1,7 @@
 from unittest.mock import patch
-from src.views import get_date_range, filter_operation_by_date
+
+from src.utils import get_date_range
+from src.views import filter_operation_by_date
 
 
 def test_get_date_range_correct():
@@ -8,7 +10,7 @@ def test_get_date_range_correct():
     assert end_date.strftime("%d.%m.%Y") == "24.12.2021"
 
 
-@patch("src.views.load_excel")
+@patch("src.utils.load_excel")
 def test_filter_operation_by_date(mock_load_excel):
     mock_load_excel.return_value = [
         {"Дата операции": "05.12.2021 12:00:00", "Категория": "Супермаркеты", "Сумма операции": -500},
