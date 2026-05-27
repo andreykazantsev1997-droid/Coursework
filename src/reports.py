@@ -19,7 +19,7 @@ def spending_by_category(operations: list, category: str, date: str) -> list:
         try:
             clean_date = str(operation_date).split()[0]
             operation_date = datetime.strptime(clean_date, "%d.%m.%Y")
-        except (ValueError, IndexError):
+        except ValueError, IndexError:
             continue
         if start_date <= operation_date <= end_date:
             report_operations.append(operation)

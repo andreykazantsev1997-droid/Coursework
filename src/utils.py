@@ -1,8 +1,21 @@
 import json
 import os
 from typing import Any, cast
-
+from datetime import datetime
 import pandas as pd
+
+
+def get_greeting(date_str: str) -> str:
+    """Функция, которая возвращает приветствие в зависимости от времени переданной даты/времени."""
+    current_hour = datetime.now().hour
+    if 6 <= current_hour < 12:
+        return "Добрый утро"
+    elif 12 <= current_hour < 18:
+        return "Добрый день"
+    elif 18 <= current_hour < 23:
+        return "Добрый вечер"
+    else:
+        return "Доброй ночи"
 
 
 def load_excel(file_path: str = "../data/operations.xlsx") -> list[Any]:
