@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta
 from collections import defaultdict
+from datetime import datetime, timedelta
 
 import pandas as pd
 
@@ -28,16 +28,14 @@ def get_top_categories_summary(filtered_operations):
             category_totals[category] += expense_amount
     sorted_categories = sorted(category_totals.items(), key=lambda x: x[1], reverse=True)
     top_7 = sorted_categories[:7]
-    top_7_categories = [
-        {"category": cat, "amount": round(amt)} for cat, amt in top_7
-    ]
+    top_7_categories = [{"category": cat, "amount": round(amt)} for cat, amt in top_7]
     others_raw = sorted_categories[7:]
     others_total = sum(amt for cat, amt in others_raw)
     return {
         "top_categories": top_7_categories,
         "others": round(others_total),
         "transfers": round(transfers_total),
-        "cash": round(cash_total)
+        "cash": round(cash_total),
     }
 
 
@@ -120,9 +118,7 @@ def get_top_cashback_categories(operations: list) -> list:
                 cashback_by_cat[category] = cashback_by_cat.get(category, 0.0) + cb_float
         except ValueError:
             continue
-    sorted_cats = sorted(
-        cashback_by_cat.items(), key=lambda x: x[1], reverse=True
-    )
+    sorted_cats = sorted(cashback_by_cat.items(), key=lambda x: x[1], reverse=True)
 
     result = []
     for cat, cb_sum in sorted_cats:

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any
-from src.reports import get_top_categories_summary
-from src.reports import get_cards_info, get_top_cashback_categories
+
+from src.reports import get_cards_info, get_top_cashback_categories, get_top_categories_summary
 from src.services import get_currency, get_stock_prices
 from src.utils import filter_operation_by_date, get_greeting, load_user_settings
 
@@ -44,13 +44,10 @@ def generate_main_page(date_str: str) -> dict[str, Any]:
     response_data = {
         "greeting": get_greeting(date_str),
         "cards": get_cards_info(filtered_operations),
-        "top_transactions": {
-            "expenses": expenses,
-            "incomes": incomes
-        },
+        "top_transactions": {"expenses": expenses, "incomes": incomes},
         "top_cashback_categories": get_top_cashback_categories(filtered_operations),
         "categories_summary": get_top_categories_summary(filtered_operations),
         "currency_rates": get_currency(user_currencies),
-        "stock_prices": get_stock_prices(user_stocks)
+        "stock_prices": get_stock_prices(user_stocks),
     }
     return response_data
