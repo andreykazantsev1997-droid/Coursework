@@ -1,6 +1,8 @@
-from services import simple_search
-from utils import load_excel
-from views import generate_main_page
+import json
+
+from src.services import simple_search
+from src.utils import load_excel
+from src.views import generate_main_page
 
 
 def main() -> None:
@@ -10,7 +12,7 @@ def main() -> None:
     try:
         main_page_data = generate_main_page(test_date)
         print("Результат Главной страницы (JSON):")
-        print(main_page_data)
+        print(json.dumps(main_page_data, ensure_ascii=False, indent=4))
     except Exception as e:
         print(f"Ошибка при генерации главной страницы: {e}")
     print("\n" + "=" * 50 + "\n")
@@ -21,7 +23,8 @@ def main() -> None:
         search_results = simple_search(all_operations, search_query)
         print(f"Найдено операций по запросу '{search_query}': {len(search_results)}")
         if search_results:
-            print(f"Пример первой найденной операции: {search_results[0]}")
+            print("Пример первой найденной операции:")
+            print(json.dumps(search_results[0], ensure_ascii=False, indent=4))
     except Exception as e:
         print(f"Ошибка при выполнении поиска: {e}")
 

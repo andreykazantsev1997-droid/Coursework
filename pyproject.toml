@@ -35,6 +35,6 @@ disallow_untyped_defs = false
 no_implicit_optional = false
 warn_return_any = false
 exclude = "venv"
-mypy_path = "src"
+mypy_path = "."
 explicit_package_bases = true
 disable_error_code = ["operator", "arg-type"]
