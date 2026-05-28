@@ -1,6 +1,44 @@
 from datetime import datetime, timedelta
+from collections import defaultdict
 
 import pandas as pd
+
+
+def get_top_categories_summary(filtered_operations):
+    category_totals = defaultdict(float)
+    transfers_total = 0.0
+    cash_total = 0.0
+    for op in filtered_operations:
+        raw_amount = op.get("Сумма операции")
+        if raw_amount is None:
+            continue
+        try:
+            amount = float(raw_amount)
+        except ValueError:
+            continue
+        if amount >= 0:
+            continue
+        expense_amount = abs(amount)
+        category = str(op.get("Категория", "Без категории")).strip()
+        if category == "Переводы":
+            transfers_total += expense_amount
+        elif category in ["Наличные", "Снятие наличных"]:
+            cash_total += expense_amount
+        else:
+            category_totals[category] += expense_amount
+    sorted_categories = sorted(category_totals.items(), key=lambda x: x[1], reverse=True)
+    top_7 = sorted_categories[:7]
+    top_7_categories = [
+        {"category": cat, "amount": round(amt)} for cat, amt in top_7
+    ]
+    others_raw = sorted_categories[7:]
+    others_total = sum(amt for cat, amt in others_raw)
+    return {
+        "top_categories": top_7_categories,
+        "others": round(others_total),
+        "transfers": round(transfers_total),
+        "cash": round(cash_total)
+    }
 
 
 def spending_by_category(operations: list, category: str, date: str) -> list:
@@ -63,8 +101,8 @@ def get_cards_info(operations: list) -> list:
         result.append(
             {
                 "last_digits": card["last_digits"],
-                "total_spent": round(float(cards_data[card_str]["total_spent"])),
-                "cashback": round(float(cards_data[card_str]["cashback"])),
+                "total_spent": round(float(card["total_spent"])),
+                "cashback": round(float(card["cashback"])),
             }
         )
     return result
@@ -82,8 +120,16 @@ def get_top_cashback_categories(operations: list) -> list:
                 cashback_by_cat[category] = cashback_by_cat.get(category, 0.0) + cb_float
         except ValueError:
             continue
-    sorted_cats = sorted(cashback_by_cat.items(), key=lambda x: x[1], reverse=True)
+    sorted_cats = sorted(
+        cashback_by_cat.items(), key=lambda x: x[1], reverse=True
+    )
+
     result = []
-    for cat, cb_sum in sorted_cats[:3]:
+    for cat, cb_sum in sorted_cats:
         result.append({"category": cat, "cashback": round(cb_sum)})
+    if len(result) >= 3:
+        return result[:3]
+    while len(result) < 3:
+        result.append({"category": "Без категории", "cashback": 0})
+
     return result

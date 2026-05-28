@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Any
-
+from src.reports import get_top_categories_summary
 from src.reports import get_cards_info, get_top_cashback_categories
 from src.services import get_currency, get_stock_prices
 from src.utils import filter_operation_by_date, get_greeting, load_user_settings
@@ -10,7 +10,7 @@ def generate_main_page(date_str: str) -> dict[str, Any]:
     """Основная функция для генерации JSON-ответа для главной страницы."""
     filtered_operations = filter_operation_by_date(date_str)
     valid_operations = [op for op in filtered_operations if op.get("Сумма операции") is not None]
-    sorted_operations = sorted(valid_operations, key=lambda x: abs(float(x.get("Сумма операции", 0))), reverse=True)
+    sorted_operations = sorted(valid_operations, key=lambda x: (float(x.get("Сумма операции", 0))), reverse=True)
     top_5_transactions = []
     for op in sorted_operations[:5]:
         raw_date = op.get("Дата операции")
@@ -36,15 +36,21 @@ def generate_main_page(date_str: str) -> dict[str, Any]:
     except Exception:
         user_currencies = ["USD", "EUR"]
     try:
-        user_stocks = settings.get("user_stocks", ["AAPL", "AMZN", "MSFT"])
+        user_stocks = settings.get("user_stocks", ["AAPL", "AMZN", "GOOGL", "MSFT", "TSLA"])
     except Exception:
-        user_stocks = ["AAPL", "AMZN"]
+        user_stocks = ["AAPL", "AMZN", "GOOGL", "MSFT", "TSLA"]
+    expenses = [op for op in top_5_transactions if op["amount"] < 0]
+    incomes = [op for op in top_5_transactions if op["amount"] > 0]
     response_data = {
         "greeting": get_greeting(date_str),
         "cards": get_cards_info(filtered_operations),
-        "top_transactions": top_5_transactions,
+        "top_transactions": {
+            "expenses": expenses,
+            "incomes": incomes
+        },
         "top_cashback_categories": get_top_cashback_categories(filtered_operations),
+        "categories_summary": get_top_categories_summary(filtered_operations),
         "currency_rates": get_currency(user_currencies),
-        "stock_prices": get_stock_prices(user_stocks),
+        "stock_prices": get_stock_prices(user_stocks)
     }
     return response_data

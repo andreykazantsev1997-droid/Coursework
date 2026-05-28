@@ -1,7 +1,9 @@
 import json
 import os
+import re
 from datetime import datetime
 from typing import Any, cast
+from pathlib import Path
 
 import pandas as pd
 
@@ -19,9 +21,26 @@ def get_greeting(date_str: str) -> str:
         return "Доброй ночи"
 
 
-def load_excel(file_path: str = "../data/operations.xlsx") -> list[Any]:
+def extract_phone_number(operation_description: str) -> str | None:
+    if not operation_description:
+        return None
+    match = re.search(r'(?:\+7|8)[\s(-]*\d{3}[\s)-]*\d{3}[\s-]*\d{2}[\s-]*\d{2}', operation_description)
+    if match:
+        found_phone = match.group(0)
+        clean_phone = re.sub(r'\D', '', found_phone)
+        if clean_phone.startswith('7'):
+            clean_phone = '8' + clean_phone[1:]
+        return clean_phone
+    return None
+
+
+CURRENT_DIR = Path(__file__).resolve().parent
+BASE_DIR = CURRENT_DIR.parent
+DEFAULT_PATH = BASE_DIR / "data" / "operations.xlsx"
+
+def load_excel(file_path: Path = DEFAULT_PATH) -> list[Any]:
     """Функция, которая читает Excel-файл и возвращает список словарей"""
-    if not os.path.exists(file_path):
+    if not file_path.exists():
         print(f"Критическая ошибка: Файл {file_path} не найден")
         return []
     try:
